@@ -1,0 +1,163 @@
+* {
+  box-sizing: border-box;
+}
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #fafafa;
+}
+
+/* --- Центральная часть (Просмотр) --- */
+.viewer-panel {
+  flex: 1; /* Занимает все свободное место */
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-wrapper img {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 4px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.navigation-bar {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.nav-btn {
+  padding: 6px 12px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.nav-btn:hover {
+  background: #e0e0e0;
+}
+
+/* --- Правая панель (Общее) --- */
+.right-sidebar {
+  width: 300px; /* Фиксированная ширина */
+  background: white;
+  border-left: 1px solid #ddd;
+  display: flex;
+  flex-direction: column; /* Вертикальное разделение */
+}
+
+/* --- Красная Зона (Верхняя) --- */
+.tags-info-section {
+  padding: 15px;
+  border-bottom: 2px solid #ddd;
+  background-color: rgba(255, 0, 0, 0.03); /* Очень бледный красный */
+}
+
+.class-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Кнопки в два ряда */
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.class-btn {
+  background: white;
+  border: 1px solid #bdc3c7;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  transition: 0.1s;
+}
+
+.class-btn:hover {
+  background: #eef1f2;
+}
+.class-btn.selected {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.key-hint {
+  background: #eee;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: 8px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+}
+.class-btn.selected .key-hint {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.label-status.set {
+  color: #27ae60;
+}
+
+/* --- Зеленая Зона (Нижняя) --- */
+.files-section {
+  flex: 1; /* Занимает оставшееся место снизу */
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  background-color: rgba(0, 255, 0, 0.02); /* Очень бледный зеленый */
+}
+
+.file-list-wrapper {
+  flex: 1;
+  overflow-y: auto; /* Скролл только здесь */
+}
+
+.file-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.file-row:hover {
+  background: rgba(0, 255, 0, 0.05);
+}
+.file-row.active {
+  background: #eaf6ff;
+  border-left: 3px solid #3498db;
+}
+.file-row.labeled {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.file-label-badge {
+  font-size: 10px;
+  background: #27ae60;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: normal;
+}
