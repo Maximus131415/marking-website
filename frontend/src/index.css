@@ -1,0 +1,292 @@
+/* 1. Подключаем профессиональный IT-шрифт Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* СВЕТЛАЯ ТЕМА (Стиль Serious Tech / B2B) */
+  --bg-color: #f8f9fa;       /* Легкий пепельно-серый фон */
+  --text-main: #11151a;      /* Строгий, почти черный цвет текста */
+  --text-muted: #6b7280;     /* Серый для второстепенного текста */
+  
+  --nav-bg: #ffffff;         /* Чисто белая шапка */
+  --card-bg: #ffffff;        /* Чисто белые карточки */
+  --border-color: #e5e7eb;   /* Тонкие, строгие границы */
+  --input-bg: #ffffff;
+  
+  --btn-bg: #0055ff;         /* Яркий, профессиональный "Tech Blue" */
+  --btn-hover: #0044cc;
+  --task-bg: #f8f9fa;
+  
+  /* Менее круглые, более "взрослые" углы */
+  --radius-sm: 4px;          
+  --radius-md: 8px;
+  --radius-lg: 12px;         
+  
+  /* Четкие, не размытые тени */
+  --shadow-sm: 0 1px 2px rgba(17, 21, 26, 0.04);
+  --shadow-md: 0 4px 12px rgba(17, 21, 26, 0.06);
+  --shadow-lg: 0 12px 24px rgba(17, 21, 26, 0.08);
+}
+
+[data-theme="dark"] {
+  /* ТЕМНАЯ ТЕМА (Стиль IDE / GitHub Dark) */
+  --bg-color: #0d1117;       /* Очень глубокий сине-черный */
+  --text-main: #f0f6fc;
+  --text-muted: #8b949e;
+  
+  --nav-bg: #161b22;
+  --card-bg: #161b22;
+  --border-color: #30363d;
+  --input-bg: #0d1117;
+  
+  --btn-bg: #2f81f7;         /* Светло-синий для идеальной читаемости */
+  --btn-hover: #1f6feb;
+  --task-bg: #0d1117;
+}
+
+/* --- Базовые стили --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.5;
+  transition: background-color 0.2s, color 0.2s;
+  -webkit-font-smoothing: antialiased; /* Делает шрифты тонкими и четкими, как на Mac */
+}
+
+/* --- Навигация --- */
+.navbar {
+  background-color: var(--nav-bg);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border-color); /* Вместо тени - строгая линия */
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  flex-grow: 1;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+
+.navbar a:hover {
+  color: var(--text-main);
+}
+
+/* --- Контейнеры и карточки --- */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color); /* Рамка вместо огромной тени */
+  box-shadow: var(--shadow-sm); 
+  padding: 3rem;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.card-wide {
+  max-width: 100%;
+}
+
+.card-auth {
+  max-width: 440px; 
+  margin: 2rem auto;
+}
+
+/* Заголовки */
+h1, h2, h3, h4 {
+  color: var(--text-main);
+  font-weight: 700;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em; /* Чуть сдвигаем буквы, это выглядит профессионально */
+}
+
+h1 { font-size: 2.5rem; letter-spacing: -0.03em; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.15rem; }
+
+/* --- Формы --- */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--btn-bg);
+  box-shadow: 0 0 0 3px rgba(0, 85, 255, 0.15); /* Строгий фокус вокруг инпута */
+}
+
+/* --- Кнопки --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--btn-bg);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.btn:hover {
+  background-color: var(--btn-hover);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.btn-outline:hover {
+  background-color: var(--task-bg);
+  border-color: var(--text-muted);
+}
+
+.btn-danger {
+  background-color: #d73a49; /* Цвет ошибки (как на GitHub) */
+}
+.btn-danger:hover { background-color: #cb2431; }
+
+.text-muted { color: var(--text-muted); }
+
+/* --- Списки задач --- */
+.task-list {
+  list-style: none;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-item {
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--card-bg);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.task-item:hover {
+  border-color: var(--btn-bg); /* При наведении карточка подсвечивается синим */
+  background-color: var(--task-bg);
+}
+
+/* --- Стили для Входной Страницы --- */
+.landing-hero {
+  text-align: center;
+  padding: 5rem 1rem; 
+  background-color: transparent;
+  margin-bottom: 2rem;
+}
+
+.landing-hero h1 {
+  font-size: 4rem; 
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-main);
+  margin-bottom: 1.5rem;
+}
+
+.landing-hero p {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  max-width: 650px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+}
+
+.landing-roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.role-card {
+  background-color: var(--card-bg);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.role-card:hover {
+  border-color: var(--btn-bg);
+  box-shadow: var(--shadow-md);
+}
+
+.role-card h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.role-card .subtitle {
+  color: var(--btn-bg);
+  font-size: 0.85rem;
+  text-transform: uppercase; /* Делаем подзаголовок капсом для стиля */
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.role-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
