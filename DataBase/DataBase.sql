@@ -3,7 +3,7 @@ CREATE TABLE Users
 	Id SERIAL PRIMARY KEY,
 	Username VARCHAR(30) UNIQUE,
 	User_role VARCHAR(30),
-	Email VARCHAR(30) UNIQUE,
+	Email VARCHAR(255) UNIQUE,
 	User_password VARCHAR(255)
 );
 
@@ -54,7 +54,7 @@ CREATE TABLE BoundingBoxes
 CREATE TABLE ClassificationLabels
 (
 	Id SERIAL PRIMARY KEY,
-	ClassName VARCHAR(60) UNIQUE,
+	ClassName VARCHAR(60),
 	LabelId INTEGER,
 	FOREIGN KEY (LabelId) REFERENCES Labels (Id)
 );
