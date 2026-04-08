@@ -1,8 +1,8 @@
 CREATE TABLE Users
 (
 	Id SERIAL PRIMARY KEY,
-	Username VARCHAR(30) UNIQUE,
-	User_role VARCHAR(30),
+	Username VARCHAR(60) UNIQUE,
+	User_role VARCHAR(60),
 	Email VARCHAR(255) UNIQUE,
 	User_password VARCHAR(255)
 );
@@ -10,11 +10,11 @@ CREATE TABLE Users
 CREATE TABLE Orders
 (
 	Id SERIAL PRIMARY KEY,
-	Title VARCHAR(60),
+	Title VARCHAR(90),
 	CustomerId INTEGER,
 	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	Task_type VARCHAR(30),
-	Status VARCHAR(30),
+	Task_type VARCHAR(60),
+	Status VARCHAR(60),
 	Description TEXT,
 	FOREIGN KEY (CustomerId) REFERENCES Users (Id)
 );
@@ -34,7 +34,7 @@ CREATE TABLE Labels
 	WorkerId INTEGER,
 	DataItemId INTEGER,
 	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	LabelType VARCHAR(30),
+	LabelType VARCHAR(60),
 	FOREIGN KEY (WorkerId) REFERENCES Users (Id),
 	FOREIGN KEY (DataItemId) REFERENCES DataItems (Id)
 );
