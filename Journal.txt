@@ -3,7 +3,57 @@
 Запись №1. Дата: 07.04.2026
 Время: 23:19
 
-Закачаны первый прототип базы данных проекта.
+Закачан первый прототип базы данных проекта.
+Его структура:
+--- [ Users ]
+--- Id (serial) PRIMARY KEY;
+--- Username (varchar) UNIQUE;
+--- User_role (varchar);
+--- Email (varchar) UNIQUE;
+--- User_password (varchar).
+
+--- [ Orders ]
+--- Id (serial) PRIMARY KEY;
+--- Title (varchar);
+--- CustomerId (integer);
+--- Created_at (varchar);
+--- Task_type (varchar);
+--- Status (varchar);
+--- Description (text);
+--- FOREIGN KEY (CustomerId) REFERENCES Users (Id).
+
+--- [ DataItems ]
+--- Id (serial) PRIMARY KEY;
+--- OrderId (integer);
+--- Created_at (varchar);
+--- File_path (varchar);
+--- FOREIGN KEY (OrderId) REFERENCES Orders (Id).
+
+--- [ Labels ]
+--- Id (serial) PRIMARY KEY;
+--- WorkerId (integer);
+--- DataItemId (integer);
+--- Created_at (varchar);
+--- LabelType (varchar);
+--- FOREIGN KEY (WorkerId) REFERENCES Users (Id);
+--- FOREIGN KEY (DataItemId) REFERENCES DataItems (Id).
+
+--- [ BoundingBoxes ]
+--- Id (serial) PRIMARY KEY;
+--- LabelId (integer);
+--- DefClass (varchar);
+--- X_Max (double precision);
+--- Y_Max (double precision);
+--- X_Min (double precision);
+--- Y_Min (double precision);
+--- FOREIGN KEY (LabelId) REFERENCES Labels (Id).
+
+--- [ ClassificationLabels ]
+--- Id (serial) PRIMARY KEY;
+--- ClassName (varchar);
+--- LabelId (integer);
+--- FOREIGN KEY (LabelId) REFERENCES Labels (Id).
+
 Ожидаю дальнейших действий.
 
 Конец записи.
@@ -37,6 +87,44 @@
 Исправлены некоторые неточности в структуре базы данных,
 а именно:
 --- Увеличена длина строк "Username", "User_role", "Title", "Task_type", "Status", "LabelType".
+Ожидаю дальнейших действий.
+
+Конец записи.
+---------------------------
+Запись №5. Дата 08.04.2026
+Время: 15:21
+
+Переделена структура базы данных, установлены стандартные процедуры:
+--- [ Users ]
+--- id (serial) PRIMARY KEY;
+--- username (varchar) UNIQUE NOT NULL;
+--- email (varchar) UNIQUE;
+--- password_hash (varchar) NOT NULL;
+--- role (varchar) NOT NULL.
+
+--- [ Orders ] IF NOT EXISTS
+--- id (serial) PRIMARY KEY;
+--- customer_id (integer);
+--- worker_id (integer);
+--- title (varchar) NOT NULL;
+--- status (varchar) DEFAULT 'open';
+--- task_type (varchar);
+--- description (text);
+--- classes (text).
+
+--- [ images ] IF NOT EXISTS
+--- id (serial) PRIMARY KEY;
+--- order_id (integer) REFERENCES orders (id) ON DELETE CASCADE;
+--- file_path (text) NOT NULL.
+
+--- [ annotations ] IF NOT EXISTS
+--- image_id (integer) REFERENCES images (id) ON DELETE CASCADE;
+--- order_id (integer) REFERENCES orders (id) ON DELETE CASCADE;
+--- worker_id (integer);
+--- label_data (text);
+--- created_at (timestamp) DEFAULT CURRENT_TIMESTAMP.
+
+Увеличены максимальные длины всех переменных до 120 символов.
 Ожидаю дальнейших действий.
 
 Конец записи.
