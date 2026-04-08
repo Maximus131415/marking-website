@@ -1,0 +1,10 @@
+# Зависимости
+node_modules/
+package-lock.json
+
+# Сборки
+dist/
+build/
+
+# Системные файлы
+.DS_Store
