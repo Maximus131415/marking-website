@@ -4,7 +4,7 @@ CREATE TABLE Users
 	Username VARCHAR(30) UNIQUE,
 	User_role VARCHAR(30),
 	Email VARCHAR(30) UNIQUE,
-	User_password VARCHAR(30)
+	User_password VARCHAR(255)
 );
 
 CREATE TABLE Orders
@@ -12,10 +12,10 @@ CREATE TABLE Orders
 	Id SERIAL PRIMARY KEY,
 	Title VARCHAR(60),
 	CustomerId INTEGER,
-	Created_at VARCHAR(30),
+	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	Task_type VARCHAR(30),
 	Status VARCHAR(30),
-	Description VARCHAR(300),
+	Description TEXT,
 	FOREIGN KEY (CustomerId) REFERENCES Users (Id)
 );
 
@@ -23,8 +23,8 @@ CREATE TABLE DataItems
 (
 	Id SERIAL PRIMARY KEY,
 	OrderId INTEGER,
-	Created_at VARCHAR(30),
-	File_path VARCHAR(60),
+	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	File_path TEXT,
 	FOREIGN KEY (OrderId) REFERENCES Orders (Id)
 );
 
@@ -33,7 +33,7 @@ CREATE TABLE Labels
 	Id SERIAL PRIMARY KEY,
 	WorkerId INTEGER,
 	DataItemId INTEGER,
-	Created_at VARCHAR(30),
+	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	LabelType VARCHAR(30),
 	FOREIGN KEY (WorkerId) REFERENCES Users (Id),
 	FOREIGN KEY (DataItemId) REFERENCES DataItems (Id)
@@ -54,7 +54,7 @@ CREATE TABLE BoundingBoxes
 CREATE TABLE ClassificationLabels
 (
 	Id SERIAL PRIMARY KEY,
-	ClassName VARCHAR(60),
+	ClassName VARCHAR(60) UNIQUE,
 	LabelId INTEGER,
 	FOREIGN KEY (LabelId) REFERENCES Labels (Id)
 );
