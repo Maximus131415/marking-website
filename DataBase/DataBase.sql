@@ -1,60 +1,37 @@
-CREATE TABLE Users
+CREATE TABLE users 
 (
-	Id SERIAL PRIMARY KEY,
-	Username VARCHAR(60) UNIQUE,
-	User_role VARCHAR(60),
-	Email VARCHAR(255) UNIQUE,
-	User_password VARCHAR(255)
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(60) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    password_hash VARCHAR(255) NOT NULL, 
+    role VARCHAR(60) NOT NULL            
 );
 
-CREATE TABLE Orders
+CREATE TABLE IF NOT EXISTS orders 
 (
-	Id SERIAL PRIMARY KEY,
-	Title VARCHAR(90),
-	CustomerId INTEGER,
-	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	Task_type VARCHAR(60),
-	Status VARCHAR(60),
-	Description TEXT,
-	FOREIGN KEY (CustomerId) REFERENCES Users (Id)
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER,
+    worker_id INTEGER,
+    title VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'open',
+    task_type VARCHAR(50),
+    description TEXT,
+    classes TEXT
 );
 
-CREATE TABLE DataItems
+CREATE TABLE IF NOT EXISTS images 
 (
-	Id SERIAL PRIMARY KEY,
-	OrderId INTEGER,
-	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	File_path TEXT,
-	FOREIGN KEY (OrderId) REFERENCES Orders (Id)
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    file_path TEXT NOT NULL
 );
 
-CREATE TABLE Labels
+CREATE TABLE IF NOT EXISTS annotations 
 (
-	Id SERIAL PRIMARY KEY,
-	WorkerId INTEGER,
-	DataItemId INTEGER,
-	Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	LabelType VARCHAR(60),
-	FOREIGN KEY (WorkerId) REFERENCES Users (Id),
-	FOREIGN KEY (DataItemId) REFERENCES DataItems (Id)
-);
-
-CREATE TABLE BoundingBoxes
-(
-	Id SERIAL PRIMARY KEY,
-	LabelId INTEGER,
-	DefClass VARCHAR(60),
-	X_Max DOUBLE PRECISION,
-	Y_Max DOUBLE PRECISION,
-	X_Min DOUBLE PRECISION,
-	Y_Min DOUBLE PRECISION,
-	FOREIGN KEY (LabelId) REFERENCES Labels (Id)
-);
-
-CREATE TABLE ClassificationLabels
-(
-	Id SERIAL PRIMARY KEY,
-	ClassName VARCHAR(60),
-	LabelId INTEGER,
-	FOREIGN KEY (LabelId) REFERENCES Labels (Id)
+    id SERIAL PRIMARY KEY,
+    image_id INTEGER REFERENCES images(id) ON DELETE CASCADE,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    worker_id INTEGER,
+    label_data TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
