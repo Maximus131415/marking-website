@@ -4,8 +4,6 @@ export default function Dashboard() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
-  
-  // Состояние для рейтинга точности (Accuracy)
   const [accuracy, setAccuracy] = useState(1.0); 
 
   useEffect(() => {
@@ -17,14 +15,12 @@ export default function Dashboard() {
 useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const res = await fetch('http://localhost:8001/users/me', {
+        const res = await fetch('https://marking-website.onrender.com/users/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();
-          // Обновляем состояние рейтинга реальными данными из БД
           setAccuracy(data.accuracy); 
-          // Опционально сохраняем в localStorage для быстрой загрузки в следующий раз
           localStorage.setItem('accuracy', data.accuracy);
         }
       } catch (error) {
