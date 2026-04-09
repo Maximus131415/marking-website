@@ -4,10 +4,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, // Важно для Docker
-    port: 3000,
+    host: true,
+    port: 8080,
+    allowedHosts: [
+      'marking-website-production.up.railway.app',
+      '.up.railway.app'
+    ],
     watch: {
-      usePolling: true // Чтобы изменения кода сразу подхватывались в контейнере
+      usePolling: true
     }
   }
 })
