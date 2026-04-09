@@ -1,22 +1,32 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* ГЛОБАЛЬНЫЕ СТИЛИ */
+* { 
+  box-sizing: border-box; /* Размеры элементов включают внутренние отступы и границы */
+  margin: 0; 
+  padding: 0; 
+}
 
 body {
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #1e1e24; /* Темно-нейтральный фон для работы с фото */
+  background-color: #1e1e24; /* Темный фон, чтобы глаза меньше уставали при разметке */
   color: #e2e8f0;
-  overflow: hidden;
+  overflow: hidden; /* Запрещаем прокрутку всей страницы, чтобы интерфейс "замер" на экране */
 }
 
-.app-container { display: flex; height: 100vh; }
+/* Главный контейнер на весь экран: делит область на две колонки */
+.app-container { 
+  display: flex; 
+  height: 100vh; 
+}
 
-/* Левая панель (Просмотр и рисование) */
+/* ЛЕВАЯ ПАНЕЛЬ: Здесь отображается фото и происходит рисование */
 .viewer-panel {
-  flex: 1;
+  flex: 1; /* Занимает всё свободное пространство слева */
   display: flex;
   flex-direction: column;
   padding: 20px;
 }
 
+/* Шапка над фото (название заказа, кнопка выхода) */
 .header-panel {
   display: flex;
   justify-content: space-between;
@@ -28,7 +38,7 @@ body {
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
-/* КОНТЕЙНЕР ДЛЯ РАМОК */
+/* КОНТЕЙНЕР ДЛЯ ХОЛСТА (Черный фон под картинкой) */
 .canvas-container {
   flex: 1;
   display: flex;
@@ -37,48 +47,54 @@ body {
   overflow: hidden;
   background: #000;
   border-radius: 8px;
-  position: relative;
-  user-select: none;
+  position: relative; /* Важно: для абсолютного позиционирования рамок внутри */
+  user-select: none; /* Чтобы при рисовании случайно не выделялся текст */
 }
 
+/* Слой с самим изображением */
 .image-layer {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
-  pointer-events: none; /* Чтобы мышка не цепляла саму картинку */
+  object-fit: contain; /* Картинка сохраняет пропорции и не обрезается */
+  pointer-events: none; /* Пропускает клики сквозь себя на drawing-area */
 }
 
-/* Область поверх картинки, где мы рисуем */
+/* Невидимая область ПОВЕРХ картинки, где мы ловим движения мыши */
 .drawing-area {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  cursor: crosshair;
+  cursor: crosshair; /* Курсор в виде прицела (перекрестия) */
 }
 
+/* СТИЛИ РАМОК (Bounding Boxes) */
 .bbox {
   position: absolute;
-  border: 2px solid #3182ce;
-  background: rgba(49, 130, 206, 0.2);
+  border: 2px solid #3182ce; /* Синий цвет для обычных рамок */
+  background: rgba(49, 130, 206, 0.2); /* Легкая заливка внутри */
   pointer-events: none;
 }
+
+/* Рамка, которую мы выбрали прямо сейчас или рисуем */
 .bbox.active {
-  border-color: #48bb78;
+  border-color: #48bb78; /* Зеленый цвет для активной рамки */
   background: rgba(72, 187, 120, 0.3);
 }
+
+/* Текстовая метка (тег) сверху над рамкой */
 .bbox-label {
   position: absolute;
   top: -20px;
   left: -2px;
   background: #3182ce;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   padding: 2px 6px;
   border-radius: 4px 4px 0 0;
   white-space: nowrap;
 }
 .bbox.active .bbox-label { background: #48bb78; }
 
-/* Правая панель (Инструменты) */
+/* ПРАВАЯ ПАНЕЛЬ (Инструменты и список файлов) */
 .sidebar {
   width: 320px;
   background: #2d3748;
@@ -99,6 +115,7 @@ body {
   margin-top: 15px;
 }
 
+/* КНОПКИ */
 .btn {
   background: #4a5568;
   color: white;
@@ -106,22 +123,24 @@ body {
   padding: 10px 15px;
   border-radius: 6px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: 0.2s; /* Плавный эффект при наведении */
   font-weight: 600;
   text-align: left;
 }
 .btn:hover { background: #718096; }
-.btn-primary { background: #3182ce; border-color: #3182ce; text-align: center;}
-.btn-primary:hover { background: #2b6cb0; }
-.btn-success { background: #48bb78; border-color: #48bb78; text-align: center;}
-.btn-success:hover { background: #38a169; }
-.btn-danger { background: transparent; border-color: #e53e3e; color: #e53e3e; text-align: center;}
-.btn-danger:hover { background: #e53e3e; color: white;}
 
+/* Специальные цвета кнопок */
+.btn-primary { background: #3182ce; border-color: #3182ce; text-align: center; }
+.btn-primary:hover { background: #2b6cb0; }
+
+.btn-danger { background: transparent; border-color: #e53e3e; color: #e53e3e; text-align: center; }
+.btn-danger:hover { background: #e53e3e; color: white; }
+
+/* СПИСОК ФАЙЛОВ */
 .files-section {
   flex: 1;
   padding: 20px;
-  overflow-y: auto;
+  overflow-y: auto; /* Если файлов много, появится прокрутка внутри панели */
 }
 
 .file-row {
@@ -129,16 +148,20 @@ body {
   background: #1a202c;
   margin-bottom: 8px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   justify-content: space-between;
-  opacity: 0.7;
+  opacity: 0.7; /* Неактивные файлы выглядят бледнее */
 }
+
+/* Подсветка текущего файла в списке */
 .file-row.active {
-  border-left: 4px solid #3182ce;
+  border-left: 4px solid #3182ce; /* Синяя полоса слева */
   opacity: 1;
   font-weight: bold;
 }
+
+/* Пометка выполненного файла */
 .file-row.done {
-  border-left: 4px solid #48bb78;
+  border-left: 4px solid #48bb78; /* Зеленая полоса слева */
 }
