@@ -10,9 +10,7 @@ export default function Home() {
     if (params.get('logout') === 'true') {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      // Очищаем ссылку от слова logout
       window.history.replaceState({}, document.title, "/");
-      // Небольшая задержка, чтобы React успел обновить состояние
       setTimeout(() => window.location.reload(), 100);
     }
   }, []);
