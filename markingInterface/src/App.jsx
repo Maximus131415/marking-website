@@ -2,51 +2,56 @@ import React, { useState, useEffect, useRef } from "react";
 import "./styles.css";
 
 export default function App() {
+  // --- ИЗВЛЕЧЕНИЕ ПАРАМЕТРОВ ИЗ URL ---
   const params = new URLSearchParams(window.location.search);
-  const orderId = params.get('orderId');
-  const urlToken = params.get('token');
+  const orderId = params.get('orderId'); // ID заказа для запросов к API
+  const urlToken = params.get('token'); // Временный токен доступа из ссылки
   
+  // Если токен есть в URL, сохраняем его в браузер и очищаем строку адреса
   if (urlToken) {
     localStorage.setItem('token', urlToken);
     window.history.replaceState({}, document.title, `?orderId=${orderId}`);
   }
   const token = localStorage.getItem('token');
 
+  // Если токена нет, выкидываем пользователя на страницу авторизации (порт 3001)
   if (!token) {
     window.location.href = 'http://localhost:3001'; 
     return null;
   }
 
-  // --- Состояния ---
-  const [order, setOrder] = useState(null);
-  const [images, setImages] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // --- СОСТОЯНИЯ (STATE) ---
+  const [order, setOrder] = useState(null); // Данные заказа (название, типы задач, доступные классы)
+  const [images, setImages] = useState([]); // Список объектов изображений
+  const [currentIndex, setCurrentIndex] = useState(0); // Номер картинки, которую размечаем сейчас
   
-  // Для Bounding Boxes
-  const [boxes, setBoxes] = useState([]); // {x, y, w, h, label} в процентах
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-  const [currentBox, setCurrentBox] = useState(null);
-  const [activeBoxIndex, setActiveBoxIndex] = useState(null);
+  // Состояния для рисования рамок (Bounding Boxes)
+  const [boxes, setBoxes] = useState([]); // Массив готовых рамок: {x, y, w, h, label}
+  const [isDrawing, setIsDrawing] = useState(false); // Режим "мышь нажата и двигается"
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 }); // Точка, где пользователь нажал кнопку мыши
+  const [currentBox, setCurrentBox] = useState(null); // Рамка, которая меняет размер прямо под курсором
+  const [activeBoxIndex, setActiveBoxIndex] = useState(null); // Индекс рамки, которой мы сейчас выбираем класс
 
-  const containerRef = useRef(null);
+  const containerRef = useRef(null); // Ссылка на DOM-элемент контейнера для расчёта координат
 
-  // Загрузка данных заказа при старте
+  // --- ЗАГРУЗКА ДАННЫХ ПРИ ПЕРВОМ РЕНДЕРЕ ---
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Получаем общую информацию о заказе
         const orderRes = await fetch(`http://localhost:8002/orders/${orderId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const orderData = await orderRes.json();
         setOrder(orderData);
 
+        // Получаем список всех картинок, привязанных к заказу
         const imagesRes = await fetch(`http://localhost:8002/orders/${orderId}/images`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const imagesData = await imagesRes.json();
         
-        // Добавляем к картинкам локальное состояние "размечено"
+        // Инициализируем локальное состояние картинок
         setImages(imagesData.map(img => ({ ...img, isDone: false, annotations: [] })));
       } catch (e) {
         console.error("Ошибка загрузки данных:", e);
@@ -56,10 +61,13 @@ export default function App() {
     if (orderId) fetchData();
   }, [orderId, token]);
 
-  // --- Логика рисования рамок (Bounding Box) ---
+  // --- ЛОГИКА РИСОВАНИЯ РАМОК ---
   const handleMouseDown = (e) => {
+    // Рисовать можно только если тип задачи — 'bounding_box'
     if (order?.task_type !== 'bounding_box') return;
+    
     const rect = containerRef.current.getBoundingClientRect();
+    // Переводим координаты клика в проценты относительно размера картинки
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     
@@ -74,6 +82,7 @@ export default function App() {
     const currentX = ((e.clientX - rect.left) / rect.width) * 100;
     const currentY = ((e.clientY - rect.top) / rect.height) * 100;
 
+    // Рассчитываем координаты и размеры (Math.min/abs позволяют рисовать в любую сторону)
     const x = Math.min(startPos.x, currentX);
     const y = Math.min(startPos.y, currentY);
     const w = Math.abs(currentX - startPos.x);
@@ -85,35 +94,37 @@ export default function App() {
   const handleMouseUp = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-    if (currentBox.w > 2 && currentBox.h > 2) { // Защита от случайных кликов
+    
+    // Если рамка не крошечная (защита от случайных кликов), добавляем её в список
+    if (currentBox.w > 2 && currentBox.h > 2) { 
       const newBoxes = [...boxes, currentBox];
       setBoxes(newBoxes);
-      setActiveBoxIndex(newBoxes.length - 1); // Активируем новую рамку, чтобы дать ей класс
+      setActiveBoxIndex(newBoxes.length - 1); // Сразу делаем её активной для выбора класса
     }
     setCurrentBox(null);
   };
 
-  // --- Назначение класса ---
+  // --- НАЗНАЧЕНИЕ КЛАССА (ТЕГА) ---
   const handleAssignClass = (className) => {
     if (order?.task_type === 'classification') {
-      // Для классификации класс присваивается всей картинке
+      // В режиме классификации один клик по кнопке сразу сохраняет результат для всего фото
       handleSaveAndNext([{ label: className }]);
     } else {
-      // Для боксов класс присваивается активной рамке
+      // В режиме рамок — проверяем, выделена ли какая-то рамка
       if (activeBoxIndex === null) return alert("Сначала нарисуйте или выберите рамку!");
       const updatedBoxes = [...boxes];
-      updatedBoxes[activeBoxIndex].label = className;
+      updatedBoxes[activeBoxIndex].label = className; // Записываем выбранный класс в рамку
       setBoxes(updatedBoxes);
-      setActiveBoxIndex(null); // Снимаем выделение
+      setActiveBoxIndex(null); // Снимаем фокус с рамки
     }
   };
 
-  // --- Сохранение и переход ---
-const handleSaveAndNext = async (finalAnnotations = boxes) => {
+  // --- СОХРАНЕНИЕ И ПЕРЕХОД К СЛЕДУЮЩЕМУ КАДРУ ---
+  const handleSaveAndNext = async (finalAnnotations = boxes) => {
     const currentImg = images[currentIndex];
     
     try {
-      // ОТПРАВЛЯЕМ ДАННЫЕ НА БЭКЕНД
+      // Отправляем массив разметок (аннотаций) на сервер
       await fetch('http://localhost:8002/annotations', {
         method: 'POST',
         headers: {
@@ -127,13 +138,14 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
         })
       });
 
-      // Локальное обновление UI
+      // Обновляем состояние интерфейса локально
       const updatedImages = [...images];
       updatedImages[currentIndex].isDone = true;
       setImages(updatedImages);
-      setBoxes([]);
+      setBoxes([]); // Очищаем холст для следующей картинки
       setActiveBoxIndex(null);
 
+      // Проверяем, есть ли еще картинки в списке
       if (currentIndex < images.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
@@ -144,29 +156,30 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
       alert("Ошибка сохранения разметки");
     }
   };
-  
 
-  // --- Приостановить работу ---
+  // Выход из интерфейса разметки обратно в личный кабинет
   const handlePause = () => {
     window.location.href = 'http://localhost:3001/dashboard';
   };
 
+  // Пока данные не загружены, показываем экран загрузки
   if (!order || images.length === 0) return <div style={{padding: '50px', color: 'white'}}>Загрузка заказа...</div>;
 
   return (
     <div className="app-container">
-      {/* ЛЕВАЯ ЧАСТЬ - ХОЛСТ */}
+      {/* ЛЕВАЯ ЧАСТЬ — РАБОЧАЯ ОБЛАСТЬ С КАРТИНКОЙ */}
       <div className="viewer-panel">
         <div className="header-panel">
           <div>
             <h2 style={{margin: 0}}>Заказ: {order.title}</h2>
             <span style={{color: '#a0aec0', fontSize: '14px'}}>
-              Тип: {order.task_type === 'classification' ? 'Классификация (Один клик)' : 'Выделение объектов (Нарисуйте рамку)'}
+              Тип: {order.task_type === 'classification' ? 'Классификация' : 'Выделение объектов'}
             </span>
           </div>
           <button className="btn btn-danger" onClick={handlePause}>⏸ Приостановить и выйти</button>
         </div>
 
+        {/* Область холста, где мы слушаем события мыши */}
         <div 
           className="canvas-container" 
           ref={containerRef}
@@ -178,7 +191,7 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
           <img src={images[currentIndex].url} alt="To Label" className="image-layer" />
           
           <div className="drawing-area">
-            {/* Рендер готовых рамок */}
+            {/* Рендерим список уже созданных рамок */}
             {boxes.map((box, i) => (
               <div 
                 key={i} 
@@ -186,11 +199,12 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
                 style={{ left: `${box.x}%`, top: `${box.y}%`, width: `${box.w}%`, height: `${box.h}%` }}
                 onClick={(e) => { e.stopPropagation(); setActiveBoxIndex(i); }}
               >
+                {/* Если у рамки уже выбран класс, показываем его название */}
                 {box.label && <div className="bbox-label">{box.label}</div>}
               </div>
             ))}
             
-            {/* Рендер рамки в процессе рисования */}
+            {/* Рендерим временную рамку, которую пользователь тянет прямо сейчас */}
             {isDrawing && currentBox && (
               <div className="bbox active" style={{ left: `${currentBox.x}%`, top: `${currentBox.y}%`, width: `${currentBox.w}%`, height: `${currentBox.h}%` }} />
             )}
@@ -198,7 +212,7 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
         </div>
       </div>
 
-      {/* ПРАВАЯ ЧАСТЬ - ПАНЕЛЬ ИНСТРУМЕНТОВ */}
+      {/* ПРАВАЯ ЧАСТЬ — ПАНЕЛЬ УПРАВЛЕНИЯ */}
       <div className="sidebar">
         <div className="tools-section">
           <h3>Варианты ответов</h3>
@@ -209,11 +223,13 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
           )}
 
           <div className="class-buttons">
+            {/* Генерируем кнопки для каждого класса, указанного в заказе */}
             {order.classes.map((cls, i) => (
               <button 
                 key={cls} 
                 className="btn" 
                 onClick={() => handleAssignClass(cls)}
+                // Кнопки классов для рамок заблокированы, пока не выбрана рамка
                 disabled={order.task_type === 'bounding_box' && activeBoxIndex === null}
                 style={{ opacity: (order.task_type === 'bounding_box' && activeBoxIndex === null) ? 0.5 : 1 }}
               >
@@ -222,6 +238,7 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
             ))}
           </div>
 
+          {/* Кнопка подтверждения видна только в режиме рамок (в классификации сохранение идет по клику на класс) */}
           {order.task_type === 'bounding_box' && (
             <button 
               className="btn btn-primary" 
@@ -233,6 +250,7 @@ const handleSaveAndNext = async (finalAnnotations = boxes) => {
           )}
         </div>
 
+        {/* СПИСОК ФАЙЛОВ И ПРОГРЕСС БАР */}
         <div className="files-section">
           <h3>Прогресс ({images.filter(i => i.isDone).length} / {images.length})</h3>
           <div style={{marginTop: '15px'}}>
