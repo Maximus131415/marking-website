@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-psycopg2-binary
-pyjwt
-pydantic
-python-multipart
