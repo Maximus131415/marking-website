@@ -221,9 +221,24 @@ async def create_draft_order(
             try:
                 with open(temp_zip_path, "wb") as buffer: shutil.copyfileobj(archive.file, buffer)
                 with zipfile.ZipFile(temp_zip_path, 'r') as z:
-                    for filename in z.namelist():
-                        if filename.endswith('/') or '__MACOSX' in filename or not filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp')): continue
-                        ext = filename.split('.')[-1]; safe_filename = f"{uuid.uuid4().hex}.{ext}"; file_location = f"uploads/{order_id}_{safe_filename}"
+                    for info in z.infolist():
+                        if info.is_dir(): continue
+                        filename = info.filename
+                        if '__MACOSX' in filename or not filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp')): continue
+                        
+                        # Декодирование русских названий из архива Windows
+                        if info.flag_bits & 0x800:
+                            orig_name = filename.split('/')[-1]
+                        else:
+                            try:
+                                orig_name = filename.encode('cp437').decode('cp866').split('/')[-1]
+                            except:
+                                orig_name = filename.split('/')[-1]
+
+                        # Сохраняем и уникальность, и оригинальное имя файла
+                        safe_filename = f"{uuid.uuid4().hex}___{orig_name}"
+                        file_location = f"uploads/{order_id}_{safe_filename}"
+                        
                         with open(file_location, "wb") as f: f.write(z.read(filename))
                         cur.execute("INSERT INTO images (order_id, file_path) VALUES (%s, %s) RETURNING id", (order_id, file_location))
                         saved_images.append({"id": cur.fetchone()[0], "url": f"{BASE_URL}/{file_location}"})
@@ -233,7 +248,9 @@ async def create_draft_order(
         if images:
             for image in images:
                 if not getattr(image, "filename", None): continue
-                ext = image.filename.split('.')[-1] if '.' in image.filename else 'jpg'; safe_filename = f"{uuid.uuid4().hex}.{ext}"; file_location = f"uploads/{order_id}_{safe_filename}"
+                orig_name = image.filename.split('/')[-1]
+                safe_filename = f"{uuid.uuid4().hex}___{orig_name}"
+                file_location = f"uploads/{order_id}_{safe_filename}"
                 with open(file_location, "wb") as buffer: shutil.copyfileobj(image.file, buffer)
                 cur.execute("INSERT INTO images (order_id, file_path) VALUES (%s, %s) RETURNING id", (order_id, file_location))
                 saved_images.append({"id": cur.fetchone()[0], "url": f"{BASE_URL}/{file_location}"})
@@ -302,25 +319,20 @@ async def save_annotation(data: dict, user: dict = Depends(get_current_user)):
         return {"status": "success"}
     finally: cur.close(); conn.close()
 
-
-
 @app.get("/orders/{order_id}/export")
 def export_results(order_id: int, user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # 1. Проверяем права и очищаем название (оставляем твою логику склейки частей)
         cur.execute("SELECT title FROM orders WHERE id = %s AND customer_id = %s", (order_id, user['user_id']))
         o_row = cur.fetchone()
         if not o_row: 
             raise HTTPException(status_code=403, detail="Доступ запрещен")
         base_title = re.sub(r' \(Часть \d+\)$', '', o_row[0])
 
-        # 2. Ищем все части заказа
         cur.execute("SELECT id FROM orders WHERE customer_id = %s AND title LIKE %s", (user['user_id'], base_title + '%'))
         order_ids = tuple([r[0] for r in cur.fetchall()])
 
-        # 3. Достаем изображения и сырую разметку (LEFT JOIN, чтобы отдать даже неразмеченные фото)
         cur.execute("""
             SELECT i.id, i.file_path, a.worker_id, a.label_data
             FROM images i 
@@ -336,25 +348,25 @@ def export_results(order_id: int, user: dict = Depends(get_current_user)):
             label_data = row[3]
 
             if img_id not in results_map:
-                # Очищаем имя файла (например, "uploads/8_test.jpg" -> "8_test.jpg")
                 clean_filename = os.path.basename(file_path)
                 
-                # Если препод просит убрать даже технический префикс вроде "8_", раскомментируй строку ниже:
-                # clean_filename = clean_filename.split('_', 1)[-1] if '_' in clean_filename else clean_filename
+                # Достаем оригинальное имя, отделяя его от UUID (маркер "___")
+                if "___" in clean_filename:
+                    clean_filename = clean_filename.split("___", 1)[-1]
+                else:
+                    clean_filename = clean_filename.split('_', 1)[-1] if '_' in clean_filename else clean_filename
 
                 results_map[img_id] = {
                     "filename": clean_filename, 
                     "worker_annotations": []
                 }
             
-            # Если для картинки есть разметка, добавляем ее в список
             if worker_id is not None and label_data:
                 results_map[img_id]["worker_annotations"].append({
                     "worker_id": worker_id,
                     "data": json.loads(label_data)
                 })
 
-        # 4. Превращаем словарь в финальный список
         final_results = [
             {
                 "image_id": img_id, 
