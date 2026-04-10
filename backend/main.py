@@ -32,7 +32,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "super_secret_datamark_key"
 ALGORITHM = "HS256"
 
-# Базовый URL для картинок (локально http://localhost:8000, в Railway подставим домен)
 BASE_URL = os.getenv("PUBLIC_URL", "") 
 
 def get_db_connection():
@@ -303,58 +302,72 @@ async def save_annotation(data: dict, user: dict = Depends(get_current_user)):
         return {"status": "success"}
     finally: cur.close(); conn.close()
 
+
+
 @app.get("/orders/{order_id}/export")
 def export_results(order_id: int, user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT title, overlap_count, task_type FROM orders WHERE id = %s AND customer_id = %s", (order_id, user['user_id']))
+        # 1. Проверяем права и очищаем название (оставляем твою логику склейки частей)
+        cur.execute("SELECT title FROM orders WHERE id = %s AND customer_id = %s", (order_id, user['user_id']))
         o_row = cur.fetchone()
-        if not o_row: raise HTTPException(status_code=403, detail="Доступ запрещен")
+        if not o_row: 
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
         base_title = re.sub(r' \(Часть \d+\)$', '', o_row[0])
-        overlap_count, task_type = o_row[1], o_row[2]
 
+        # 2. Ищем все части заказа
         cur.execute("SELECT id FROM orders WHERE customer_id = %s AND title LIKE %s", (user['user_id'], base_title + '%'))
         order_ids = tuple([r[0] for r in cur.fetchall()])
 
-        cur.execute(f"""
-            SELECT i.id, i.file_path, a.label_data, COALESCE(u.accuracy, 1.0)
-            FROM images i JOIN annotations a ON i.id = a.image_id LEFT JOIN users u ON a.worker_id = u.id
+        # 3. Достаем изображения и сырую разметку (LEFT JOIN, чтобы отдать даже неразмеченные фото)
+        cur.execute("""
+            SELECT i.id, i.file_path, a.worker_id, a.label_data
+            FROM images i 
+            LEFT JOIN annotations a ON i.id = a.image_id 
             WHERE i.order_id IN %s
         """, (order_ids,))
         
         results_map = {}
         for row in cur.fetchall():
             img_id = row[0]
-            if img_id not in results_map: results_map[img_id] = {"url": f"{BASE_URL}/{row[1]}", "anns": []}
-            results_map[img_id]["anns"].append({"data": json.loads(row[2]), "acc": float(row[3])})
+            file_path = row[1]
+            worker_id = row[2]
+            label_data = row[3]
 
-        final_results = []
-        for img_id, item in results_map.items():
-            if task_type == 'classification':
-                scores = {}
-                for ann in item["anns"]:
-                    if isinstance(ann["data"], list) and ann["data"]:
-                        lbl = ann["data"][0].get('label')
-                        if lbl: scores[lbl] = scores.get(lbl, 0) + ann["acc"]
-                best_label = max(scores, key=scores.get) if scores else None
-                final_results.append({"image_id": img_id, "file_url": item["url"], "consensus_result": [{"label": best_label}]})
-            else:
-                clusters = []
-                for ann in item["anns"]:
-                    if not isinstance(ann["data"], list): continue
-                    for box in ann["data"]:
-                        match = next((c for c in clusters if c['label'] == box.get('label') and calculate_iou(c['avg_box'], box) > 0.4), None)
-                        if match:
-                            match['score'] += ann["acc"]; n = match['count'] + 1; match['count'] = n; c_box = match['avg_box']
-                            match['avg_box'] = { 'x': (c_box['x']*(n-1) + box['x'])/n, 'y': (c_box['y']*(n-1) + box['y'])/n, 'w': (c_box['w']*(n-1) + box['w'])/n, 'h': (c_box['h']*(n-1) + box['h'])/n, 'label': box.get('label') }
-                        else:
-                            clusters.append({'label': box.get('label'), 'score': ann["acc"], 'count': 1, 'avg_box': box})
-                valid_boxes = [c['avg_box'] for c in clusters if c['score'] >= (overlap_count * 0.4)]
-                final_results.append({"image_id": img_id, "file_url": item["url"], "consensus_result": valid_boxes})
+            if img_id not in results_map:
+                # Очищаем имя файла (например, "uploads/8_test.jpg" -> "8_test.jpg")
+                clean_filename = os.path.basename(file_path)
+                
+                # Если препод просит убрать даже технический префикс вроде "8_", раскомментируй строку ниже:
+                # clean_filename = clean_filename.split('_', 1)[-1] if '_' in clean_filename else clean_filename
+
+                results_map[img_id] = {
+                    "filename": clean_filename, 
+                    "worker_annotations": []
+                }
+            
+            # Если для картинки есть разметка, добавляем ее в список
+            if worker_id is not None and label_data:
+                results_map[img_id]["worker_annotations"].append({
+                    "worker_id": worker_id,
+                    "data": json.loads(label_data)
+                })
+
+        # 4. Превращаем словарь в финальный список
+        final_results = [
+            {
+                "image_id": img_id, 
+                "filename": item["filename"], 
+                "worker_annotations": item["worker_annotations"]
+            } 
+            for img_id, item in results_map.items()
+        ]
                 
         return {"order_title": base_title, "data": final_results}
-    finally: cur.close(); conn.close()
+    finally: 
+        cur.close()
+        conn.close()
 
 @app.get("/orders/{order_id}")
 def get_order_details(order_id: int, user: dict = Depends(get_current_user)):

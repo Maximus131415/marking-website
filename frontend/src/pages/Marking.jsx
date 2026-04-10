@@ -26,7 +26,6 @@ export default function Marking() {
 
   useEffect(() => {
     if (!token) { navigate('/login'); return; }
-    
     const fetchData = async () => {
       try {
         const orderRes = await fetch(`${API_URL}/orders/${orderId}`, {
@@ -44,40 +43,39 @@ export default function Marking() {
         const firstUndone = mappedImages.findIndex(img => !img.isDone);
         setCurrentIndex(firstUndone !== -1 ? firstUndone : 0);
       } catch (e) {
-        console.error("Ошибка загрузки данных:", e);
         alert("Не удалось загрузить заказ");
       }
     };
     if (orderId) fetchData();
   }, [orderId, token, navigate]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && activeBoxIndex !== null) {
-        setBoxes(prev => prev.filter((_, i) => i !== activeBoxIndex));
-        setActiveBoxIndex(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeBoxIndex]);
-
   const handleMouseDown = (e) => {
     if (order?.task_type !== 'bounding_box') return;
+    
+    // БЛОКИРОВКА: Запрещаем рисовать, если есть рамка без тега
+    if (boxes.some(b => !b.label)) {
+      alert("Сначала выберите класс для уже нарисованной рамки!");
+      return;
+    }
+
     const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    // Ограничиваем клик рамками холста
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    
     setStartPos({ x, y });
     setIsDrawing(true);
     setCurrentBox({ x, y, w: 0, h: 0, label: null });
-    setActiveBoxIndex(null); // Сбрасываем фокус при новом рисовании
+    setActiveBoxIndex(null);
   };
 
   const handleMouseMove = (e) => {
     if (!isDrawing) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const currentX = ((e.clientX - rect.left) / rect.width) * 100;
-    const currentY = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    // ОГРАНИЧЕНИЕ ВЫХОДА ЗА КРАЯ КАРТИНКИ
+    const currentX = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const currentY = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
     const x = Math.min(startPos.x, currentX);
     const y = Math.min(startPos.y, currentY);
@@ -92,7 +90,7 @@ export default function Marking() {
     if (currentBox.w > 2 && currentBox.h > 2) { 
       const newBoxes = [...boxes, currentBox];
       setBoxes(newBoxes);
-      setActiveBoxIndex(newBoxes.length - 1); 
+      setActiveBoxIndex(newBoxes.length - 1); // Автоматически выделяем новую рамку
     }
     setCurrentBox(null);
   };
@@ -113,14 +111,17 @@ export default function Marking() {
     setCollapsedCats(prev => ({ ...prev, [cat]: !prev[cat] }));
   };
 
+  const handleDeleteSelected = () => {
+    if (activeBoxIndex !== null) {
+      setBoxes(boxes.filter((_, idx) => idx !== activeBoxIndex));
+      setActiveBoxIndex(null);
+    }
+  };
+
   const handleSaveAndNext = async (finalAnnotations = boxes) => {
     if (order?.task_type === 'bounding_box') {
-      if (finalAnnotations.length === 0) {
-        return alert("❌ Ошибка: Выделите хотя бы один объект на фото!");
-      }
-      if (finalAnnotations.some(b => !b.label)) {
-        return alert("❌ Ошибка: Вы забыли присвоить класс одной из рамок!");
-      }
+      if (finalAnnotations.length === 0) return alert("❌ Ошибка: Выделите хотя бы один объект на фото!");
+      if (finalAnnotations.some(b => !b.label)) return alert("❌ Ошибка: Вы забыли присвоить класс рамке!");
     }
 
     const currentImg = images[currentIndex];
@@ -162,19 +163,14 @@ export default function Marking() {
         <div className="header-panel">
           <div>
             <h2 style={{margin: 0}}>Заказ: {order.title}</h2>
-            <span style={{color: '#a0aec0', fontSize: '14px'}}>
-              Тип: {order.task_type === 'classification' ? 'Классификация' : 'Выделение объектов'}
-            </span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            {/* КНОПКИ ЗУМА */}
             <button className="btn btn-outline" onClick={() => setZoom(z => Math.max(0.5, z - 0.2))}>➖ Масштаб</button>
             <button className="btn btn-outline" onClick={() => setZoom(z => Math.min(3, z + 0.2))}>➕ Масштаб</button>
-            <button className="btn btn-danger" onClick={() => navigate('/list')}>⏸ Приостановить и выйти</button>
+            <button className="btn btn-danger" onClick={() => navigate('/list')}>⏸ Выйти</button>
           </div>
         </div>
 
-        {/* Зона просмотра с поддержкой скролла при увеличении */}
         <div style={{ flex: 1, overflow: 'auto', background: '#000', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div 
             className="canvas-container" 
@@ -184,30 +180,16 @@ export default function Marking() {
             onMouseUp={handleMouseUp} 
             onMouseLeave={handleMouseUp}
             style={{ 
-              transform: `scale(${zoom})`, 
-              transformOrigin: 'center center', 
-              transition: 'transform 0.2s ease', 
-              width: '100%', 
-              height: '100%', 
-              position: 'relative' 
+              transform: `scale(${zoom})`, transformOrigin: 'center center', transition: 'transform 0.2s ease', 
+              width: '100%', height: '100%', position: 'relative', overflow: 'hidden' // overflow: hidden не дает рамкам вылезти визуально
             }}
           >
-            <img src={images[currentIndex].url} alt="To Label" className="image-layer" />
+            <img src={images[currentIndex].url} alt="To Label" className="image-layer" draggable="false" />
             
             <div className="drawing-area">
               {boxes.map((box, i) => (
-                <div key={i} className={`bbox ${i === activeBoxIndex ? 'active' : ''}`} style={{ left: `${box.x}%`, top: `${box.y}%`, width: `${box.w}%`, height: `${box.h}%` }} onClick={(e) => { e.stopPropagation(); setActiveBoxIndex(i); }}>
-                  {box.label && <div className="bbox-label">{box.label}</div>}
-                  
-                  {/* КРЕСТИК ДЛЯ УДАЛЕНИЯ РАМКИ */}
-                  {i === activeBoxIndex && (
-                     <div 
-                       onClick={(e) => { e.stopPropagation(); setBoxes(boxes.filter((_, idx) => idx !== i)); setActiveBoxIndex(null); }} 
-                       style={{ position: 'absolute', top: '-22px', right: '-2px', background: '#e53e3e', color: 'white', cursor: 'pointer', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}
-                     >
-                       ✖
-                     </div>
-                  )}
+                <div key={i} className={`bbox ${i === activeBoxIndex ? 'active' : ''} ${!box.label ? 'bbox-warning' : ''}`} style={{ left: `${box.x}%`, top: `${box.y}%`, width: `${box.w}%`, height: `${box.h}%`, borderColor: !box.label ? '#e53e3e' : '' }} onClick={(e) => { e.stopPropagation(); setActiveBoxIndex(i); }}>
+                  {box.label ? <div className="bbox-label">{box.label}</div> : <div className="bbox-label" style={{background: '#e53e3e'}}>Нет тега!</div>}
                 </div>
               ))}
               {isDrawing && currentBox && (
@@ -221,14 +203,24 @@ export default function Marking() {
       <div className="sidebar">
         <div className="tools-section" style={{ flex: 1, overflowY: 'auto' }}>
           <h3>Варианты ответов</h3>
+          
+          {/* ПАНЕЛЬ УПРАВЛЕНИЯ РАМКАМИ */}
           {order.task_type === 'bounding_box' && (
-            <p style={{fontSize: '12px', color: '#a0aec0', marginTop: '5px'}}>
-              {activeBoxIndex !== null ? "🟢 Выберите класс для текущей рамки:" : "1. Нарисуйте рамку на объекте."}
-              <br/><br/><i>💡 Выделите рамку и нажмите <b>Backspace</b> чтобы удалить.</i>
-            </p>
+            <div style={{ background: 'var(--bg-primary)', padding: '10px', borderRadius: '8px', marginTop: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <button className="btn btn-danger" style={{ flex: 1, fontSize: '0.85rem' }} onClick={handleDeleteSelected} disabled={activeBoxIndex === null}>
+                  ✖ Удалить выбранную
+                </button>
+                <button className="btn btn-outline" style={{ flex: 1, fontSize: '0.85rem' }} onClick={() => {setBoxes([]); setActiveBoxIndex(null);}} disabled={boxes.length === 0}>
+                  🗑 Сбросить все
+                </button>
+              </div>
+              <p style={{fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0}}>
+                {activeBoxIndex !== null ? "🟢 Выберите класс для красной рамки ниже:" : "1. Нарисуйте рамку на объекте."}
+              </p>
+            </div>
           )}
 
-          {/* АККОРДЕОН КЛАССОВ */}
           <div className="class-buttons" style={{ marginTop: '15px' }}>
             {Object.entries(groupedClasses).map(([cat, tags]) => (
               <div key={cat} style={{ background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', marginBottom: '8px' }}>
@@ -236,19 +228,12 @@ export default function Marking() {
                   <span>📁 {cat}</span>
                   <span>{collapsedCats[cat] ? '▼' : '▲'}</span>
                 </div>
-
                 {!collapsedCats[cat] && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
                     {tags.map(tag => {
                       const fullName = `${cat}: ${tag}`;
                       return (
-                        <button
-                          key={fullName}
-                          className="btn"
-                          onClick={() => handleAssignClass(fullName)}
-                          disabled={order.task_type === 'bounding_box' && activeBoxIndex === null}
-                          style={{ opacity: (order.task_type === 'bounding_box' && activeBoxIndex === null) ? 0.5 : 1, textAlign: 'left', padding: '8px' }}
-                        >
+                        <button key={fullName} className="btn" onClick={() => handleAssignClass(fullName)} disabled={order.task_type === 'bounding_box' && activeBoxIndex === null} style={{ opacity: (order.task_type === 'bounding_box' && activeBoxIndex === null) ? 0.5 : 1, textAlign: 'left', padding: '8px' }}>
                           {tag}
                         </button>
                       );
@@ -270,13 +255,7 @@ export default function Marking() {
           <h3>Прогресс ({images.filter(i => i.isDone).length} / {images.length})</h3>
           <div style={{marginTop: '15px'}}>
             {images.map((img, i) => (
-              <div 
-                key={img.id} 
-                className={`file-row ${i === currentIndex ? "active" : ""} ${img.isDone ? "done" : ""}`}
-                // Кликабельность: можно вернуться и пересмотреть картинку
-                onClick={() => !img.isDone && setCurrentIndex(i)} 
-                style={{ cursor: !img.isDone ? 'pointer' : 'default' }}
-              >
+              <div key={img.id} className={`file-row ${i === currentIndex ? "active" : ""} ${img.isDone ? "done" : ""}`} onClick={() => !img.isDone && setCurrentIndex(i)} style={{ cursor: !img.isDone ? 'pointer' : 'default' }}>
                 <span>Фото #{i + 1}</span>
                 {img.isDone ? <span style={{color: '#48bb78'}}>✔ Размечено</span> : <span>В очереди</span>}
               </div>
