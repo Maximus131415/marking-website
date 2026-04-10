@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import "./Marking.css"; // Твои стили с темным фоном
 
 // ЕДИНАЯ ССЫЛКА НА БЭКЕНД
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -10,7 +9,6 @@ export default function Marking() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId'); 
   
-  // Токен теперь всегда лежит в localStorage (спасибо странице Login)
   const token = localStorage.getItem('token');
 
   if (!token) {
@@ -28,6 +26,9 @@ export default function Marking() {
   const [currentBox, setCurrentBox] = useState(null); 
   const [activeBoxIndex, setActiveBoxIndex] = useState(null); 
 
+  // НОВОЕ СОСТОЯНИЕ ДЛЯ ПЛОСКОГО СПИСКА КЛАССОВ
+  const [flattenedClasses, setFlattenedClasses] = useState([]);
+
   const containerRef = useRef(null); 
 
   useEffect(() => {
@@ -36,7 +37,21 @@ export default function Marking() {
         const orderRes = await fetch(`${API_URL}/orders/${orderId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        setOrder(await orderRes.json());
+        const orderData = await orderRes.json();
+        setOrder(orderData);
+
+        // Превращаем словарь {"Группа": ["Тег"]} в плоский массив ["Группа: Тег"]
+        if (orderData.classes) {
+          if (Array.isArray(orderData.classes)) {
+            setFlattenedClasses(orderData.classes); // Защита от старых заказов
+          } else {
+            const flat = [];
+            Object.entries(orderData.classes).forEach(([cat, tags]) => {
+              tags.forEach(tag => flat.push(`${cat}: ${tag}`));
+            });
+            setFlattenedClasses(flat);
+          }
+        }
 
         const imagesRes = await fetch(`${API_URL}/orders/${orderId}/images`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -116,7 +131,7 @@ export default function Marking() {
         setCurrentIndex(currentIndex + 1);
       } else {
         alert("🎉 Заказ полностью выполнен! Статус обновлен.");
-        navigate('/list'); // Возврат в список заказов
+        navigate('/list'); 
       }
     } catch (e) {
       alert("Ошибка сохранения разметки");
@@ -163,7 +178,8 @@ export default function Marking() {
             </p>
           )}
           <div className="class-buttons">
-            {order.classes.map((cls, i) => (
+            {/* ИСПОЛЬЗУЕМ НОВЫЙ ПЛОСКИЙ МАССИВ КЛАССОВ */}
+            {flattenedClasses.map((cls, i) => (
               <button key={cls} className="btn" onClick={() => handleAssignClass(cls)} disabled={order.task_type === 'bounding_box' && activeBoxIndex === null} style={{ opacity: (order.task_type === 'bounding_box' && activeBoxIndex === null) ? 0.5 : 1 }}>
                 <span className="key-hint">{i + 1}</span> {cls}
               </button>
