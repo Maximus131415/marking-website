@@ -1,0 +1,144 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #1e1e24; /* Темно-нейтральный фон для работы с фото */
+  color: #e2e8f0;
+  overflow: hidden;
+}
+
+.app-container { display: flex; height: 100vh; }
+
+/* Левая панель (Просмотр и рисование) */
+.viewer-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.header-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #2d3748;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+/* КОНТЕЙНЕР ДЛЯ РАМОК */
+.canvas-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background: #000;
+  border-radius: 8px;
+  position: relative;
+  user-select: none;
+}
+
+.image-layer {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none; /* Чтобы мышка не цепляла саму картинку */
+}
+
+/* Область поверх картинки, где мы рисуем */
+.drawing-area {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  cursor: crosshair;
+}
+
+.bbox {
+  position: absolute;
+  border: 2px solid #3182ce;
+  background: rgba(49, 130, 206, 0.2);
+  pointer-events: none;
+}
+.bbox.active {
+  border-color: #48bb78;
+  background: rgba(72, 187, 120, 0.3);
+}
+.bbox-label {
+  position: absolute;
+  top: -20px;
+  left: -2px;
+  background: #3182ce;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px 4px 0 0;
+  white-space: nowrap;
+}
+.bbox.active .bbox-label { background: #48bb78; }
+
+/* Правая панель (Инструменты) */
+.sidebar {
+  width: 320px;
+  background: #2d3748;
+  border-left: 1px solid #4a5568;
+  display: flex;
+  flex-direction: column;
+}
+
+.tools-section {
+  padding: 20px;
+  border-bottom: 1px solid #4a5568;
+}
+
+.class-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn {
+  background: #4a5568;
+  color: white;
+  border: 1px solid #718096;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  font-weight: 600;
+  text-align: left;
+}
+.btn:hover { background: #718096; }
+.btn-primary { background: #3182ce; border-color: #3182ce; text-align: center;}
+.btn-primary:hover { background: #2b6cb0; }
+.btn-success { background: #48bb78; border-color: #48bb78; text-align: center;}
+.btn-success:hover { background: #38a169; }
+.btn-danger { background: transparent; border-color: #e53e3e; color: #e53e3e; text-align: center;}
+.btn-danger:hover { background: #e53e3e; color: white;}
+
+.files-section {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.file-row {
+  padding: 10px;
+  background: #1a202c;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  opacity: 0.7;
+}
+.file-row.active {
+  border-left: 4px solid #3182ce;
+  opacity: 1;
+  font-weight: bold;
+}
+.file-row.done {
+  border-left: 4px solid #48bb78;
+}
