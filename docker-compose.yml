@@ -9,11 +9,17 @@ services:
       POSTGRES_USER: datamark
       POSTGRES_PASSWORD: password
       POSTGRES_DB: datamark_db
-    ports:
-      - "5432:5432"
+#    ports:
+#      - "5432:5432"
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       # Запускаем скрипт Олега при первом старте базы
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datamark"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # 2. Бэкенд Авторизации (от Ражаббоя)
   backend-auth:
@@ -54,3 +60,6 @@ services:
     container_name: datamark_marking_ui
     ports:
       - "3003:3003"
+
+volumes:
+  postgres_data:
