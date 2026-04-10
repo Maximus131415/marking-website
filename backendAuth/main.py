@@ -5,6 +5,7 @@ import psycopg2
 import jwt
 import datetime
 from passlib.context import CryptContext
+import os
 
 app = FastAPI(title="DataMark Auth API")
 
@@ -21,13 +22,17 @@ SECRET_KEY = "super_secret_datamark_key"
 ALGORITHM = "HS256"
 
 def get_db_connection():
-    return psycopg2.connect(
-        dbname="datamark_db",
-        user="datamark",
-        password="password",
-        host="database"
-    )
-
+    db_url = os.getenv("postgresql://postgres:hxjhUQsWvuNiamNxgwWRJYEvlohBiFfT@postgres.railway.internal:5432/railway")
+    
+    if db_url:
+        return psycopg2.connect(db_url)
+    else:
+        return psycopg2.connect(
+            dbname="datamark_db",
+            user="datamark",
+            password="password",
+            host="database"
+        )
 class UserRegister(BaseModel):
     username: str
     password: str
