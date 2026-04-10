@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. База Данных (от Олега)
+  database:
+    image: postgres:15
+    container_name: datamark_db
+    environment:
+      POSTGRES_USER: datamark
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: datamark_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # Запускаем скрипт Олега при первом старте базы
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. Бэкенд Авторизации (от Ражаббоя)
+  backend-auth:
+    build: ./backendAuth
+    container_name: datamark_auth_api
+    ports:
+      - "8001:8000"
+    depends_on:
+      - database
+
+  # 3. Бэкенд Заказов и Разметки (от Марата)
+  backend-orders:
+    build: ./backendOrders
+    container_name: datamark_orders_api
+    ports:
+      - "8002:8000"
+    depends_on:
+      - database
+
+  # 4. Фронтенд Авторизации (от Одила)
+  frontend-auth:
+    build: ./frontendAuth
+    container_name: datamark_auth_ui
+    ports:
+      - "3001:3000"
+    # Фронтенды не зависят от базы напрямую, они общаются с бэкендами по сети
+
+  # 5. Фронтенд Заказов (от Ромы)
+  frontend-orders:
+    build: ./frontendOrders
+    container_name: datamark_orders_ui
+    ports:
+      - "3002:3002"
+
+  # 6. Интерфейс Разметки (от Ильяра)
+  marking-interface:
+    build: ./markingInterface
+    container_name: datamark_marking_ui
+    ports:
+      - "3003:3003"
