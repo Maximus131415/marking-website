@@ -8,16 +8,14 @@ export default function Home() {
 
   const token = localStorage.getItem('token');
 
-  // Обработка "жесткого" выхода из системы через URL (на всякий случай)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('logout') === 'true') {
-      localStorage.clear(); // Очищаем все данные (токен, роль, рейтинг)
-      navigate('/', { replace: true }); // Убираем ?logout=true из адресной строки
+      localStorage.clear(); 
+      navigate('/', { replace: true }); 
     }
   }, [location, navigate]);
 
-  // Управление переключением темной/светлой темы
   useEffect(() => {
     if (theme === 'dark') document.body.classList.add('dark');
     else document.body.classList.remove('dark');
@@ -26,9 +24,7 @@ export default function Home() {
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
-  const goToDashboard = () => {
-    navigate('/dashboard');
-  };
+  const goToDashboard = () => navigate('/dashboard');
 
   return (
     <div>
@@ -39,7 +35,6 @@ export default function Home() {
             {theme === 'light' ? '🌙 Темная' : '☀️ Светлая'}
           </button>
           
-          {/* Если пользователь уже вошел, показываем кнопку кабинета, иначе - входа */}
           {token ? (
             <button className="btn" onClick={goToDashboard}>Личный кабинет ➡</button>
           ) : (
@@ -55,42 +50,38 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Показываем карточки с услугами только если пользователь НЕ вошел */}
-      {!token && (
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '-20px' }}>
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <h2 style={{ marginBottom: '15px' }}>🏢 Для Заказчиков</h2>
-            <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '20px', flex: 1 }}>
-              <li>Создание массовых заданий на разметку</li>
-              <li>Поддержка Bounding Boxes и Классификации</li>
-              <li>Управление доступом к датасетам</li>
-              <li>Выгрузка готовых результатов в JSON</li>
-            </ul>
-            <div style={{ marginTop: '25px' }}>
-              {/* Передаем параметр type=customer, чтобы страница регистрации сама выбрала роль */}
-              <Link to="/register?type=customer" className="btn" style={{ width: '100%', textAlign: 'center' }}>
-                Стать Заказчиком
-              </Link>
-            </div>
-          </div>
-
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <h2 style={{ marginBottom: '15px' }}>💻 Для Исполнителей</h2>
-            <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '20px', flex: 1 }}>
-              <li>Доступ к бирже открытых задач</li>
-              <li>Удобный интерфейс разметки с поддержкой горячих клавиш</li>
-              <li>Мгновенная отправка результатов на сервер</li>
-              <li>Прозрачная статистика выполненных работ</li>
-            </ul>
-            <div style={{ marginTop: '25px' }}>
-              {/* Передаем параметр type=worker */}
-              <Link to="/register?type=worker" className="btn btn-outline" style={{ width: '100%', textAlign: 'center' }}>
-                Стать Исполнителем
-              </Link>
-            </div>
+      {/* Карточки теперь отображаются всегда. Меняется только поведение кнопок */}
+      <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '-20px' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <h2 style={{ marginBottom: '15px' }}>🏢 Для Заказчиков</h2>
+          <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '20px', flex: 1 }}>
+            <li>Создание массовых заданий на разметку</li>
+            <li>Поддержка Bounding Boxes и Классификации</li>
+            <li>Управление доступом к датасетам</li>
+            <li>Выгрузка готовых результатов в JSON</li>
+          </ul>
+          <div style={{ marginTop: '25px' }}>
+            <Link to={token ? "/dashboard" : "/register?type=customer"} className="btn" style={{ width: '100%', textAlign: 'center' }}>
+              {token ? "Перейти в кабинет Заказчика" : "Стать Заказчиком"}
+            </Link>
           </div>
         </div>
-      )}
+
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <h2 style={{ marginBottom: '15px' }}>💻 Для Исполнителей</h2>
+          <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '20px', flex: 1 }}>
+            <li>Доступ к бирже открытых задач</li>
+            <li>Удобный интерфейс разметки с поддержкой горячих клавиш</li>
+            <li>Мгновенная отправка результатов на сервер</li>
+            <li>Прозрачная статистика выполненных работ</li>
+          </ul>
+          <div style={{ marginTop: '25px' }}>
+            <Link to={token ? "/dashboard" : "/register?type=worker"} className="btn btn-outline" style={{ width: '100%', textAlign: 'center' }}>
+              {token ? "Начать разметку данных" : "Стать Исполнителем"}
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

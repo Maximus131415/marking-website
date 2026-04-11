@@ -1,32 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
-// Единая ссылка на бэкенд
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [accuracy, setAccuracy] = useState(1.0); 
+  const [username, setUsername] = useState(''); // Состояние для имени пользователя
 
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
-  // Защита: если нет токена, выкидываем на страницу логина
   useEffect(() => {
-    if (!token) {
-      navigate('/login');
-    }
+    if (!token) navigate('/login');
   }, [token, navigate]);
 
-  // Смена темы
   useEffect(() => {
     if (theme === 'dark') document.body.classList.add('dark');
     else document.body.classList.remove('dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Загрузка рейтинга (только для исполнителей)
+  // Загрузка данных пользователя (имени и рейтинга)
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -35,30 +31,34 @@ export default function Dashboard() {
         });
         if (res.ok) {
           const data = await res.json();
-          setAccuracy(data.accuracy); 
-          localStorage.setItem('accuracy', data.accuracy);
+          setUsername(data.username); // Сохраняем имя
+          if (role === 'worker') {
+            setAccuracy(data.accuracy); 
+            localStorage.setItem('accuracy', data.accuracy);
+          }
         }
       } catch (error) {
-        console.error("Не удалось загрузить рейтинг:", error);
+        console.error("Не удалось загрузить данные пользователя:", error);
       }
     };
 
-    if (role === 'worker' && token) {
-      fetchUserData();
-    }
+    if (token) fetchUserData();
   }, [token, role]);
 
   const handleLogout = () => {
-    localStorage.clear(); // Очищаем всё при выходе
-    navigate('/'); // Возвращаем на главную страницу
+    localStorage.clear(); 
+    navigate('/', { replace: true }); 
   };
 
   return (
     <div>
       <nav className="navbar">
-        <h2 style={{ margin: 0, color: 'var(--accent-color)' }}>
-          Кабинет ({role === 'customer' ? 'Заказчик' : 'Исполнитель'})
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <Link to="/" style={{ textDecoration: 'none' }}>
+            <h2 style={{ margin: 0, color: 'var(--accent-color)' }}>DataMark</h2>
+          </Link>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '1.2rem' }}>| Кабинет ({role === 'customer' ? 'Заказчик' : 'Исполнитель'})</span>
+        </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn btn-outline" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
             {theme === 'light' ? '🌙 Темная' : '☀️ Светлая'}
@@ -71,9 +71,9 @@ export default function Dashboard() {
 
       <div className="container" style={{ marginTop: '40px' }}>
         <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-          <h2>Добро пожаловать в DataMark!</h2>
+          {/* Персонализированное приветствие */}
+          <h2>Добро пожаловать, <span style={{ color: 'var(--accent-color)' }}>{username || 'Пользователь'}</span>!</h2>
           
-          {/* Блок отображения рейтинга для исполнителя */}
           {role === 'worker' && (
              <div style={{ background: 'rgba(72, 187, 120, 0.1)', border: '1px solid #48bb78', padding: '15px', borderRadius: '8px', display: 'inline-block', marginBottom: '20px', marginTop: '15px' }}>
                <h3 style={{ margin: 0, color: '#2f855a' }}>
@@ -94,7 +94,6 @@ export default function Dashboard() {
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {role === 'customer' ? (
               <>
-                {/* Теперь переходы делаются плавно через navigate */}
                 <button className="btn" style={{ fontSize: '1.2rem', padding: '15px 30px' }} onClick={() => navigate('/create')}>
                   + Создать новый заказ
                 </button>
